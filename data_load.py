@@ -1,5 +1,6 @@
 import os
 import SimpleITK as sitk
+import json
 
 class DataLoader:
     def __init__(self):
@@ -17,24 +18,34 @@ class DataLoader:
     def retina(self):
         path = os.path.join(self.path,"retina-oct-glaucoma/retina-oct-glaucoma/imagesTr")
         json_path = os.path.join(self.path,"retina-oct-glaucoma/retina-oct-glaucoma/dataset.json")
-        images = []
-        np_arrays = []
-
+        
         # Load JSON label info
         with open(json_path, "r") as f:
             metadata = json.load(f)
             label_data = metadata["training"]
 
-        for filename in os.listdir(path):
-            if filename.endswith(".mha"):
+        # Prepare outputs
+        images = []
+        np_arrays = []
+        labels = []
+
+        # Iterate through files and match with label
+        for idx, filename in enumerate(os.listdir(path)):
+            current_label_data = label_data[idx]
+            current_label_image_name = int(current_label_data['image'][16:20])
+            current_file_name = int(filename[5:9])
+            if filename.endswith(".mha") and (current_label_image_name == current_file_name) and (current_file_name == idx):
                 full_path = os.path.join(path, filename)
                 image = sitk.ReadImage(full_path)
                 images.append(image)
                 np_arrays.append(sitk.GetArrayFromImage(image))
+                labels.append(current_label_data["POAG"])
             else:
-                print("non-mha object found:",filename)
+                print("Eithter non-mha object found:",filename, 
+                      "OR indeces don't match ( current_label_image_name,current_file_name), idx",current_label_image_name,current_file_name,idx)
         
-        return images, np_arrays
+        return images, np_arrays, labels
+    
     
     # load the data in folder glaucoma_oct_data/OCTandFundusImages
     # see data documentation on OneDrive for "Data on OCT and Fundus Images"
