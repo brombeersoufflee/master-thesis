@@ -1,6 +1,7 @@
 import os
 import SimpleITK as sitk
 import json
+from sklearn.model_selection import train_test_split
 
 class DataLoader:
     def __init__(self):
@@ -16,6 +17,18 @@ class DataLoader:
     # load the data in folder glaucoma_oct_data/retina-oct-glaucoma
     # see data documentation on OneDrive for "Retina OCT Glaucoma dataset"
     def retina(self):
+        """loads the data in folder glaucoma_oct_data/retina-oct-glaucoma
+        see data documentation on OneDrive for "Retina OCT Glaucoma dataset"
+
+        Returns
+        -------
+        images
+            a list of 3D OCT images
+        np_arrays
+            a list of 3D OCT np arrays
+        labels
+            a list of labels corresponding via index to images and np_arrays
+        """
         path = os.path.join(self.path,"retina-oct-glaucoma/retina-oct-glaucoma/imagesTr")
         json_path = os.path.join(self.path,"retina-oct-glaucoma/retina-oct-glaucoma/dataset.json")
         
@@ -46,6 +59,37 @@ class DataLoader:
         
         return images, np_arrays, labels
     
+    def retina_split(self, np_array_data, labels_data, test_proportion=0.2, val_proportion=0.15):
+        """splits the dataset into parts for training, testing and validation
+
+        Returns
+        -------
+        X_train, X_test, X_val
+            a list of 3D OCT numpy arrays
+        y_train, y_test, y_val
+            a list of labels corresponding via index to the numpy arrays
+        """
+        X_train, X_test, y_train, y_test = train_test_split(np_array_data, labels_data, test_size=test_proportion, shuffle=True)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=val_proportion, shuffle=True)
+        return X_train, X_test, X_val, y_train, y_test, y_val
+    
+    # subspended idea to save the data in json format
+    # there might be different ways to do this, but I'm not sure it's necessary
+    # def retina_save(self, X_train, X_test, X_val, y_train, y_test, y_val):
+    #     train_json = [{"X": X_train[i], "y": y_train[i]} for i in range(len(X_train))]
+    #     test_json = [{"X": X_test[i], "y": y_test[i]} for i in range(len(X_test))]
+    #     val_json = [{"X": X_val[i], "y": y_val[i]} for i in range(len(X_val))]
+
+
+    #     path = os.path.join(self.path,"retina-oct-glaucoma/retina-oct-glaucoma/")
+    #     # Save the JSON files
+        
+    #     with open('train_data.json', 'w') as f:
+    #         json.dump(train_json, f, indent=4)
+    #     with open('test_data.json', 'w') as f:
+    #         json.dump(test_json, f, indent=4)
+    #     with open('val_data.json', 'w') as f:
+    #         json.dump(val_json, f, indent=4)
     
     # load the data in folder glaucoma_oct_data/OCTandFundusImages
     # see data documentation on OneDrive for "Data on OCT and Fundus Images"
