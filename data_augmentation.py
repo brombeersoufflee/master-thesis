@@ -68,7 +68,7 @@ class AugmentData:
     # applied a brightness shift of 40, the std of the pixel values is around 25 so this creates realistic brightness changes/errors
     # TODO: 
     def brightness_change(image):
-        image = image.astype(np.int) #otherwise negative values of the brightness shift throw an error
+        image = image.astype(int) #otherwise negative values of the brightness shift throw an error
         brightness_shift = random.randint(-40, 40)
         return np.clip(image + brightness_shift, 0, 255).astype(np.uint8)
         
@@ -90,31 +90,37 @@ class AugmentData:
             lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255).astype(np.uint8)
         return cv.LUT(image, lookUpTable)
     
-    # TODO: check the below for correctness and document the code
+    # This probably should not be applied!!!
+    # https://docs.opencv.org/3.4/d4/d1b/tutorial_histogram_equalization.html
     def histogram_equalization(image):
-        hist, bins = np.histogram(image.flatten(), 256, [0, 256])
-        cdf = hist.cumsum()
-        cdf_normalized = cdf * (255 / cdf[-1])
-        return np.interp(image.flatten(), bins[:-1], cdf_normalized).reshape(image.shape).astype(np.uint8)
+        return np.array([cv.equalizeHist(slice) for slice in image])
     
-    def gaussian_noise(image):
-        noise = np.random.normal(0, 25, image.shape).astype(np.uint8)
-        return np.clip(image + noise, 0, 255).astype(np.uint8)
-    
+    def gaussian_noise(image, mean=0):
+        sigma = random.randint(0, 25)
+        noise = np.random.normal(mean, sigma, image.shape)
+        noisy_image = image.astype(np.float32) + noise
+        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
+        return noisy_image
+
     def blurring(image):
-        kernel = np.ones((5, 5), np.float32) / 25
-        return cv2.filter2D(image, -1, kernel).astype(np.uint8)
+        kernel = np.ones((3, 3), np.float32) / 9
+        return cv.filter2D(image, -1, kernel).astype(np.uint8)
     
-    def sharpening(image):
+    # might be too close the original image
+    def blurring_then_sharpening(image):
+        blurred_image = cv.filter2D(image, -1, np.ones((3, 3), np.float32) / 9).astype(np.uint8)
         kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
-        return cv2.filter2D(image, -1, kernel).astype(np.uint8)
+        return cv.filter2D(blurred_image, -1, kernel).astype(np.uint8)
     
+    # correct but is this shift sensible?
     def small_translation(image):
         tx = random.randint(-5, 5)
         ty = random.randint(-5, 5)
         M = np.float32([[1, 0, tx], [0, 1, ty]])
-        return cv2.warpAffine(image, M, (image.shape[1], image.shape[0])).astype(np.uint8)
+        array = np.array([cv.warpAffine(slice, M, (slice.shape[1], slice.shape[0])).astype(np.uint8) for slice in image ])
+        return array
     
+    # TODO: check the below for correctness and document the code
     def mild_scaling(image):
         scale = random.uniform(0.9, 1.1)
         M = np.float32([[scale, 0, 0], [0, scale, 0]])
