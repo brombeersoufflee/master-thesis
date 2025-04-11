@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import cv2 as cv
 
 class AugmentData:
     def __init__(self, X_train, y_train):
@@ -75,17 +76,21 @@ class AugmentData:
     # https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
     # applying the change around the mean preserves the average brightness of the image while increasing or decreasing contrast.
     def contrast_change(image):
-        contrast_factor = random.uniform(0.8, 1.2)
+        contrast_factor = random.uniform(0.5, 1.5)
         mean = np.mean(image)
         return np.clip((image - mean) * contrast_factor + mean, 0, 255).astype(np.uint8)
     
 
-    # TODO: check the below for correctness and document the code
-
+    # https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
     def gamma_correction(image):
-        gamma = random.uniform(0.8, 1.2)
-        return np.clip((image / 255) ** gamma * 255, 0, 255).astype(np.uint8)
+        gamma = random.uniform(0.75, 1.5)
+        # utilize the LUT to speed up the gamma correction calculation (calculte the lookup table once (256 claculations, O(1) after) and use it for all pixels (524.288 pixels per image))
+        lookUpTable = np.empty((1,256))
+        for i in range(256):
+            lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255).astype(np.uint8)
+        return cv.LUT(image, lookUpTable)
     
+    # TODO: check the below for correctness and document the code
     def histogram_equalization(image):
         hist, bins = np.histogram(image.flatten(), 256, [0, 256])
         cdf = hist.cumsum()
