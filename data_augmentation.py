@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import cv2 as cv
+from scipy.ndimage import gaussian_filter, map_coordinates
 
 class AugmentData:
     def __init__(self, X_train, y_train):
@@ -9,32 +10,32 @@ class AugmentData:
         self.X_train_augmented = []
         self.y_train_augmented = []
     
-    def augment_data(self, num_new_images, return_values= "complete"):
-        if num_new_images < 0:
-            raise ValueError("num_new_images must be non-negative")
+    def augment_data(self, num_new_volumes, return_values= "complete"):
+        if num_new_volumes < 0:
+            raise ValueError("num_new_volumes must be non-negative")
         if return_values not in ["complete", "augmented"]:
             raise ValueError("return_values must be either 'complete' or 'augmented'")
         
-        if num_new_images == 0:
-            print("No new images to generate.")
+        if num_new_volumes == 0:
+            print("No new volumes to generate.")
             return self.X_train, self.y_train
-        if num_new_images > 0:
-            for i in range(num_new_images):
+        if num_new_volumes > 0:
+            for i in range(num_new_volumes):
                 random_index = np.random.randint(0, len(self.X_train))
-                random_image = self.X_train[random_index]
+                random_volume = self.X_train[random_index]
                 random_label = self.y_train[random_index]
                 
                 random_method_num = random.random()
                 #TODO: decide which augmentation methods to use and in which proportions
                 if random_method_num < 0.5:
                     # apply augmentation method 1
-                    augmented_image = self.augmentation_method(random_image)
+                    augmented_volume = self.augmentation_method(random_volume)
                 else:
                     # apply augmentation method 2
-                    augmented_image = self.augmentation_method2(random_image)
+                    augmented_volume = self.augmentation_method2(random_volume)
                 
-                # append the augmented image to the augmented training set
-                self.X_train_augmented.append(augmented_image)
+                # append the augmented volume to the augmented training set
+                self.X_train_augmented.append(augmented_volume)
                 self.y_train_augmented.append(random_label)
 
         if return_values == "complete":
@@ -67,88 +68,144 @@ class AugmentData:
     # https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
     # applied a brightness shift of 40, the std of the pixel values is around 25 so this creates realistic brightness changes/errors
     # TODO: 
-    def brightness_change(image):
-        image = image.astype(int) #otherwise negative values of the brightness shift throw an error
+    @staticmethod
+    def brightness_change(volume):
+        volume = volume.astype(int) #otherwise negative values of the brightness shift throw an error
         brightness_shift = random.randint(-40, 40)
-        return np.clip(image + brightness_shift, 0, 255).astype(np.uint8)
+        return np.clip(volume + brightness_shift, 0, 255).astype(np.uint8)
         
     # contrast modification around the mean with a random multiplier between 0.8 and 1.2
     # https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
-    # applying the change around the mean preserves the average brightness of the image while increasing or decreasing contrast.
-    def contrast_change(image):
+    # applying the change around the mean preserves the average brightness of the volume while increasing or decreasing contrast.
+    @staticmethod
+    def contrast_change(volume):
         contrast_factor = random.uniform(0.5, 1.5)
-        mean = np.mean(image)
-        return np.clip((image - mean) * contrast_factor + mean, 0, 255).astype(np.uint8)
+        mean = np.mean(volume)
+        return np.clip((volume - mean) * contrast_factor + mean, 0, 255).astype(np.uint8)
     
 
     # https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
-    def gamma_correction(image):
+    @staticmethod
+    def gamma_correction(volume):
         gamma = random.uniform(0.75, 1.5)
-        # utilize the LUT to speed up the gamma correction calculation (calculte the lookup table once (256 claculations, O(1) after) and use it for all pixels (524.288 pixels per image))
+        # utilize the LUT to speed up the gamma correction calculation (calculte the lookup table once (256 claculations, O(1) after) and use it for all pixels (524.288 pixels per volume))
         lookUpTable = np.empty((1,256))
         for i in range(256):
             lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255).astype(np.uint8)
-        return cv.LUT(image, lookUpTable)
+        return cv.LUT(volume, lookUpTable)
     
     # This probably should not be applied!!!
     # https://docs.opencv.org/3.4/d4/d1b/tutorial_histogram_equalization.html
-    def histogram_equalization(image):
-        return np.array([cv.equalizeHist(slice) for slice in image])
+    @staticmethod
+    def histogram_equalization(volume):
+        return np.array([cv.equalizeHist(slice) for slice in volume])
     
-    def gaussian_noise(image, mean=0):
+    @staticmethod
+    def gaussian_noise(volume, mean=0):
         sigma = random.randint(0, 25)
-        noise = np.random.normal(mean, sigma, image.shape)
-        noisy_image = image.astype(np.float32) + noise
-        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
-        return noisy_image
+        noise = np.random.normal(mean, sigma, volume.shape)
+        noisy_volume = volume.astype(np.float32) + noise
+        noisy_volume = np.clip(noisy_volume, 0, 255).astype(np.uint8)
+        return noisy_volume
 
-    def blurring(image):
+    @staticmethod
+    def blurring(volume):
         kernel = np.ones((3, 3), np.float32) / 9
-        return cv.filter2D(image, -1, kernel).astype(np.uint8)
+        return cv.filter2D(volume, -1, kernel).astype(np.uint8)
     
-    # might be too close the original image
-    def blurring_then_sharpening(image):
-        blurred_image = cv.filter2D(image, -1, np.ones((3, 3), np.float32) / 9).astype(np.uint8)
+    # might be too close the original volume
+    @staticmethod
+    def blurring_then_sharpening(volume):
+        blurred_volume = cv.filter2D(volume, -1, np.ones((3, 3), np.float32) / 9).astype(np.uint8)
         kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
-        return cv.filter2D(blurred_image, -1, kernel).astype(np.uint8)
+        return cv.filter2D(blurred_volume, -1, kernel).astype(np.uint8)
     
     # correct but is this shift sensible?
-    def small_translation(image):
+    @staticmethod
+    def small_translation(volume):
         tx = random.randint(-5, 5)
         ty = random.randint(-5, 5)
         M = np.float32([[1, 0, tx], [0, 1, ty]])
-        array = np.array([cv.warpAffine(slice, M, (slice.shape[1], slice.shape[0])).astype(np.uint8) for slice in image ])
+        array = np.array([cv.warpAffine(slice, M, (slice.shape[1], slice.shape[0])).astype(np.uint8) for slice in volume ])
         return array
     
-    # TODO: check the below for correctness and document the code
-    def mild_scaling(image):
+    #correct and scaling values are reasonable
+    @staticmethod
+    def mild_scaling(volume):
         scale = random.uniform(0.9, 1.1)
-        M = np.float32([[scale, 0, 0], [0, scale, 0]])
-        return cv2.warpAffine(image, M, (image.shape[1], image.shape[0])).astype(np.uint8)
     
-    def elastic_deformation(image):
-        random_state = np.random.RandomState(None)
-        shape = image.shape
-        dx = random_state.rand(*shape) * 2 - 1
-        dy = random_state.rand(*shape) * 2 - 1
-        dz = random_state.rand(*shape) * 2 - 1
-        dz[0] = 0
-        dz[-1] = 0
-        return np.clip(image + dx + dy + dz, 0, 255).astype(np.uint8)
+        center_x = volume.shape[0] // 2
+        center_y = volume.shape[1] // 2
 
-    def cutout(self, image):
-        h, w = image.shape[:2]
+        M = np.float32([
+            [scale, 0, (1 - scale) * center_x],
+            [0, scale, (1 - scale) * center_y]
+        ])
+
+        # M = np.float32([[scale, 0, 0], [0, scale, 0]])
+        scaled_volume = np.array([cv.warpAffine(slice, M, (volume.shape[0],volume.shape[1])) for slice in volume])
+        return scaled_volume.astype(np.uint8)
+        
+    # TODO:understand the code
+    # correct and good values for the distortion
+    # alpha could be higher for the RNFL but not for the optic nerve (too many distortions in those 10 slices)
+    @staticmethod
+    def elastic_deformation_3d(volume, alpha=10, sigma=2, random_state=None):
+        """
+        Apply elastic deformation to a 3D volume.
+        
+        Args:
+            volume (ndarray): 3D array with shape (D, H, W)
+            alpha (float): Scaling factor for the intensity of the deformation
+            sigma (float): Standard deviation of the Gaussian filter (controls smoothness)
+            random_state (int or None): Seed for reproducibility
+        
+        Returns:
+            ndarray: Deformed 3D volume of same shape, dtype=np.uint8
+        """
+        if random_state is None:
+            random_state = np.random.RandomState(None)
+        elif isinstance(random_state, int):
+            random_state = np.random.RandomState(random_state)
+
+        shape = volume.shape
+
+        # Generate random displacement fields and smooth them
+        dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
+        dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
+        dz = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
+
+        # Create meshgrid of indices
+        z, y, x = np.meshgrid(
+            np.arange(shape[0]), np.arange(shape[1]), np.arange(shape[2]),
+            indexing='ij'
+        )
+
+        # Apply deformation
+        indices = np.reshape(z + dz, (-1,)), np.reshape(y + dy, (-1,)), np.reshape(x + dx, (-1,))
+        distorted = map_coordinates(volume, indices, order=1, mode='reflect').reshape(shape)
+
+        return np.clip(distorted, 0, 255).astype(np.uint8)
+
+
+    # TODO: check the below for correctness and document the code
+    # This doesn't seem sensible for the data augmentation
+    # it could be used for later in training
+    @staticmethod
+    def cutout(volume):
+        h, w = volume.shape[:2]
         mask_size = random.randint(10, 30)
         x = random.randint(0, w - mask_size)
         y = random.randint(0, h - mask_size)
-        image[y:y + mask_size, x:x + mask_size] = 0
-        return image.astype(np.uint8)
+        volume[y:y + mask_size, x:x + mask_size] = 0
+        return volume.astype(np.uint8)
     
-    def random_erasing(self, image):
-        h, w = image.shape[:2]
+    @staticmethod
+    def random_erasing(volume):
+        h, w = volume.shape[:2]
         mask_size = random.randint(10, 30)
         x = random.randint(0, w - mask_size)
         y = random.randint(0, h - mask_size)
-        image[y:y + mask_size, x:x + mask_size] = random.randint(0, 255)
-        return image.astype(np.uint8)
+        volume[y:y + mask_size, x:x + mask_size] = random.randint(0, 255)
+        return volume.astype(np.uint8)
 
