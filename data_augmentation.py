@@ -20,10 +20,20 @@ class AugmentData:
             print("No new volumes to generate.")
             return self.X_train, self.y_train
         if num_new_volumes > 0:
+             #init indeces
+            brightness_index = 0
+            contrast_index = 0
+            gamma_index = 0
+            gauss_index = 0
+            blurring_index = 0
+            blurring_sharpening_index = 0
+            translation_index = 0
+            scaling_index = 0
+            deformation_index = 0
+            #find all non-glaucomatous instances
+            negative_indices = np.where(self.y_train == 0)[0]
+            random_index = np.random.choice(negative_indices)
             for i in range(num_new_volumes):
-                #find all non-glaucomatous instances
-                negative_indices = np.where(self.y_train == 0)[0]
-                random_index = np.random.choice(negative_indices)
                 # select a random non-glaucomatous volume and label from the training set
                 random_volume = self.X_train[random_index]
                 random_label = self.y_train[random_index]
@@ -32,16 +42,6 @@ class AugmentData:
                 random_method_num = random.random() 
                 random_type_num = random.random()
 
-                #init indeces
-                brightness_index = 0
-                contrast_index = 0
-                gamma_index = 0
-                gauss_index = 0
-                blurring_index = 0
-                blurring_sharpening_index = 0
-                translation_index = 0
-                scaling_index = 0
-                deformation_index = 0
                 #TODO: decide which augmentation methods to use and in which proportions
                 if random_type_num < 0.5:
                     if random_method_num < 0.2:

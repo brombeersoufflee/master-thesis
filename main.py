@@ -36,7 +36,7 @@ print("Samples to produce in augmentation: ", num_new_images)
 X_train_augmented, y_train_augmented = augmenter.augment_data(num_new_images, return_values="complete")
 
 
-print("augmented data shape: ", X_train_augmented.shape, y_train_augmented.shape)
+print("augmented data shape: X", X_train_augmented.shape,"----- y", y_train_augmented.shape)
 print("\n")
 glaucoma = sum(y_train_augmented)
 glaucoma_cent = glaucoma/len(y_train_augmented)
