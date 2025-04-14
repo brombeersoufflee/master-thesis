@@ -5,8 +5,8 @@ from scipy.ndimage import gaussian_filter, map_coordinates
 
 class AugmentData:
     def __init__(self, X_train, y_train):
-        self.X_train = X_train
-        self.y_train = y_train
+        self.X_train = np.array(X_train)
+        self.y_train = np.array(y_train)
         self.X_train_augmented = []
         self.y_train_augmented = []
     
@@ -21,27 +21,86 @@ class AugmentData:
             return self.X_train, self.y_train
         if num_new_volumes > 0:
             for i in range(num_new_volumes):
-                random_index = np.random.randint(0, len(self.X_train))
+                #find all non-glaucomatous instances
+                negative_indices = np.where(self.y_train == 0)[0]
+                random_index = np.random.choice(negative_indices)
+                # select a random non-glaucomatous volume and label from the training set
                 random_volume = self.X_train[random_index]
                 random_label = self.y_train[random_index]
                 
-                random_method_num = random.random()
+                # random number for augmentation type and method
+                random_method_num = random.random() 
+                random_type_num = random.random()
+
+                #init indeces
+                brightness_index = 0
+                contrast_index = 0
+                gamma_index = 0
+                gauss_index = 0
+                blurring_index = 0
+                blurring_sharpening_index = 0
+                translation_index = 0
+                scaling_index = 0
+                deformation_index = 0
                 #TODO: decide which augmentation methods to use and in which proportions
-                if random_method_num < 0.5:
-                    # apply augmentation method 1
-                    augmented_volume = self.augmentation_method(random_volume)
+                if random_type_num < 0.5:
+                    if random_method_num < 0.2:
+                        augmented_volume = self.brightness_change(random_volume)
+                        brightness_index +=1
+                    elif random_method_num >= 0.2 and random_method_num < 0.4:
+                        augmented_volume = self.contrast_change(random_volume)
+                        contrast_index +=1
+                    elif random_method_num >= 0.4 and random_method_num < 0.6:
+                        augmented_volume = self.gamma_correction(random_volume)
+                        gamma_index +=1
+                # not recommended for the RNFL data augmentation
+                # can distort the volume too much
+                # elif random_method_num < 0.8:
+                #     augmented_volume = self.histogram_equalization(random_volume)
+                    elif random_method_num >= 0.6 and random_method_num < 0.8:
+                        augmented_volume = self.gaussian_noise(random_volume)
+                        gauss_index +=1
+                    elif random_method_num >= 0.8 and random_method_num < 0.9:
+                        augmented_volume = self.blurring(random_volume)
+                        blurring_index +=1
+                    else:
+                        augmented_volume = self.blurring_then_sharpening(random_volume)
+                        blurring_sharpening_index +=1
+                elif random_type_num >=0.5 and random_type_num < 0.75:
+                    if random_method_num < 0.5: 
+                        augmented_volume = self.small_translation(random_volume)
+                        translation_index +=1
+                    else:
+                        augmented_volume = self.mild_scaling(random_volume)
+                        scaling_index +=1
                 else:
-                    # apply augmentation method 2
-                    augmented_volume = self.augmentation_method2(random_volume)
+                    augmented_volume = self.elastic_deformation_3d(random_volume)
+                    deformation_index +=1
+                    # ignore for now maybe apply later in training
+                    # elif random_method_num < 1.1:
+                    #     augmented_volume = self.cutout(random_volume)
+                    # elif random_method_num < 1.15:
+                    #     augmented_volume = self.random_erasing(random_volume)
                 
                 # append the augmented volume to the augmented training set
                 self.X_train_augmented.append(augmented_volume)
                 self.y_train_augmented.append(random_label)
 
+        print("Augmented data with the following methods:")
+        print(f"Brightness changes: {brightness_index}, {brightness_index/num_new_volumes*100}%")
+        print(f"Contrast changes: {contrast_index}, {contrast_index/num_new_volumes*100}%")
+        print(f"Gamma changes: {gamma_index}, {gamma_index/num_new_volumes*100}%")
+        print(f"Gaussian noise: {gauss_index}, {gauss_index/num_new_volumes*100}%")
+        print(f"Blurring: {blurring_index}, {blurring_index/num_new_volumes*100}%")
+        print(f"Blurring then sharpening: {blurring_sharpening_index}, {blurring_sharpening_index/num_new_volumes*100}%")
+        print(f"Small translation: {translation_index}, {translation_index/num_new_volumes*100}%")
+        print(f"Mild scaling: {scaling_index}, {scaling_index/num_new_volumes*100}%")
+        print(f"Elastic deformation: {deformation_index}, {deformation_index/num_new_volumes*100}%")
+
         if return_values == "complete":
             print("Returning both original and augmented data in one.")
-            X_train_complete = self.X_train.copy() + self.X_train_augmented.copy()
-            y_train_complete = self.y_train.copy() + self.y_train_augmented.copy()
+            X_train_complete = np.concatenate((self.X_train, self.X_train_augmented), axis=0)
+            y_train_complete = np.concatenate((self.y_train, self.y_train_augmented), axis=0)
             return X_train_complete, y_train_complete
         if return_values == "augmented":
             print("Returning only augmented data.")
