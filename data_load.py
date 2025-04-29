@@ -2,6 +2,7 @@ import os
 import SimpleITK as sitk
 import json
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 class DataLoader:
     def __init__(self):
@@ -17,7 +18,7 @@ class DataLoader:
     # load the data in folder glaucoma_oct_data/retina-oct-glaucoma
     # see data documentation on OneDrive for "Retina OCT Glaucoma dataset"
     def retina(self):
-        """loads the data in folder glaucoma_oct_data/retina-oct-glaucoma
+        """loads the data in folder glaucoma_oct_data/-oct-glaucoma
         see data documentation on OneDrive for "Retina OCT Glaucoma dataset"
 
         Returns
@@ -59,6 +60,50 @@ class DataLoader:
         
         return images, np_arrays, labels
     
+    def retina_npy(self):
+        """loads the data in folder glaucoma_oct_data/retina-oct-glaucoma-NPY
+        see data documentation on OneDrive for "Retina OCT Glaucoma dataset"
+
+        Returns
+        -------
+        np_arrays
+            a list of 3D OCT np arrays
+        pathology
+            a list of labels corresponding via index to np_arrays
+        patient_id
+            a list of patient ids corresponding via index to np_arrays
+        eye_side
+            a list of eye sides (OD or OS) corresponding via index to np_arrays
+        """
+
+        path = os.path.join(self.path,"retina-oct-glaucoma-NPY")
+        
+        arrays = []
+        pathology = []
+        patient_id = []
+        eye_side = []
+    
+        for filename in os.listdir(path):
+            if filename.endswith('.npy'):
+                file_path = os.path.join(path, filename)
+                arr = np.load(file_path)
+                arrays.append(arr)
+
+                # Remove the .npy extension if needed
+                name = filename[:-4] if filename.endswith('.npy') else filename
+                parts = name.split('-')
+
+                # Extract metadata
+                pathology.append(parts[0])      # Normal or POAG
+                patient_id.append(parts[1])      # The number after
+                eye_side.append(parts[-1])       # OD or OS (last part)
+        
+        # Convert arrays to numpy array of objects
+        np_arrays = np.array(arrays, dtype=int)
+        
+        return np_arrays, pathology, patient_id, eye_side
+
+
     def retina_split(self, np_array_data, labels_data, test_proportion=0.2, val_proportion=0.15):
         """splits the dataset into parts for training, testing and validation
 
