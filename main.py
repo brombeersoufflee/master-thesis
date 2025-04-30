@@ -5,7 +5,9 @@ import numpy as np
 import data_augmentation as aug
 
 data_loader = data_load.DataLoader()
-image_data, np_array_data, labels_data = data_loader.retina()
+# image_data, np_array_data, labels_data = data_loader.retina()
+np_arrays, pathology, patient_id, eye_side = data_loader.retina_npy()
+
 print("poaGlaucoma: ", sum(labels_data), "  Healthy:", len(labels_data)-sum(labels_data))
 print("\n")
 

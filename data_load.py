@@ -3,17 +3,15 @@ import SimpleITK as sitk
 import json
 from sklearn.model_selection import train_test_split
 import numpy as np
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.model_selection import GroupKFold
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 
 class DataLoader:
     def __init__(self):
         self.path = "glaucoma_oct_data/"
 
-    # load the data in folder glaucoma_oct_data/DatasetIEEE
-    # see data documentation on OneDrive for "unnamed"
-    def ieee_data(self):
-        # relevant part is the OD (optic disc) folder for glaucoma data
-        folder_structure = os.path.join(self.path,"DatasetIEEE/Dataset/Dataset/OD")
-        return 0
     
     # load the data in folder glaucoma_oct_data/retina-oct-glaucoma
     # see data documentation on OneDrive for "Retina OCT Glaucoma dataset"
@@ -100,8 +98,12 @@ class DataLoader:
         
         # Convert arrays to numpy array of objects
         np_arrays = np.array(arrays, dtype=int)
-        
-        return np_arrays, pathology, patient_id, eye_side
+        lb = LabelBinarizer()
+        labels_data = lb.fit_transform(pathology)
+        if labels_data[0]!=0:
+            print("Warning - labels_data[0] is not 0 -- inverted labels where POAG is 0!!!")
+
+        return np_arrays, labels_data, patient_id, eye_side
 
 
     def retina_split(self, np_array_data, labels_data, test_proportion=0.2, val_proportion=0.15):
@@ -136,8 +138,78 @@ class DataLoader:
     #     with open('val_data.json', 'w') as f:
     #         json.dump(val_json, f, indent=4)
     
+    @staticmethod
+    def retina_npy_split(X, y, groups, n_splits=10, shuffle=True, random_state=None):
+        """splits the (retina_npy loaded) dataset into parts for training and testing
+        X: np.ndarray
+            The input data to be split.
+        y: np.ndarray
+            The target labels for the input data.
+        groups: np.ndarray
+            The group labels for the input data.
+        n_splits: int, default=10
+            The number of splits for cross-validation.
+        shuffle: bool, default=True
+            Whether to shuffle the data before splitting.
+        random_state: int, default=None
+            Random seed for reproducibility.
+        Returns
+        -------
+        cv_split: generator
+            A generator that yields train-test splits for cross-validation.
+        """
+        sgkf = GroupKFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+        cv_split = sgkf.split(X=X, y=y, groups = groups)
+        return cv_split
+    
+    @staticmethod
+    #https://www.geeksforgeeks.org/cross-validation-using-k-fold-with-scikit-learn/#logistic-regression-model-kfold-cross-validating
+    def plot_kfold(cv_split, ax, data_size = 1110):
+        """
+        Plots the indices for a cross-validation object.
+
+        Parameters:
+        cv_split: Cross-validation split generator object
+        data_size: Size of the dataset (default is 1110)
+        ax: Matplotlib axis object
+        """
+
+        # Set color map for the plot
+        cmap_cv = plt.cm.coolwarm
+        n_splits = 0
+
+        for i_split, (train_idx, test_idx) in enumerate(cv_split):
+            # Create an array of NaNs and fill in training/testing indices
+            indices = np.full(data_size, np.nan)
+            indices[test_idx], indices[train_idx] = 1, 0
+            
+            # Plot the training and testing indices
+            ax_x = range(len(indices))
+            ax_y = [i_split + 0.5] * len(indices)
+            ax.scatter(ax_x, ax_y, c=indices, marker="_", 
+                        lw=10, cmap=cmap_cv, vmin=-0.2, vmax=1.2)
+            n_splits += 1
+
+        # Set y-ticks and labels
+        y_ticks = np.arange(n_splits) + 0.5
+        ax.set(yticks=y_ticks, yticklabels=range(n_splits),
+                xlabel="X index", ylabel="Fold",
+                ylim=[n_splits, -0.2], xlim=[0, data_size])
+
+        # Set plot title and create legend
+        ax.set_title("KFold", fontsize=14)
+        legend_patches = [Patch(color=cmap_cv(0.8), label="Testing set"),
+                            Patch(color=cmap_cv(0.02), label="Training set")]
+        ax.legend(handles=legend_patches, loc=(1.03, 0.8))
+
     # load the data in folder glaucoma_oct_data/OCTandFundusImages
     # see data documentation on OneDrive for "Data on OCT and Fundus Images"
     def oct_fundus(self):
-        return 0
+        raise NotImplementedError("This function is not implemented.")
     
+    # load the data in folder glaucoma_oct_data/DatasetIEEE
+    # see data documentation on OneDrive for "unnamed"
+    def ieee_data(self):
+        # relevant part is the OD (optic disc) folder for glaucoma data
+        folder_structure = os.path.join(self.path,"DatasetIEEE/Dataset/Dataset/OD")
+        raise NotImplementedError("This function is not implemented.")
