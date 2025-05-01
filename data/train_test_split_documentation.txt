@@ -1,0 +1,10 @@
+The split is balanced
+
+
+test_size: 0.2, n_splits: 1, random_state: 7
+
+
+train shape: (882, 64, 128, 64) - train %: 0.7945945945945946  ---  test shape: (228, 64, 128, 64) test %: 0.20540540540540542
+
+
+train positives: 0.7562358276643991   ---  test positives: 0.7894736842105263

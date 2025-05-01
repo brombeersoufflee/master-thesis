@@ -67,7 +67,7 @@ class Model_Implementation:
                 print(f"Fold {i+1}/{self.kfolds}")
                 X_train, X_val = self.np_arrays[train_idx], self.np_arrays[val_idx]
                 y_train, y_val = self.labels_data[train_idx], self.labels_data[val_idx]
-
+    
                 # Data augmentation
                 if self.augmentation:
                     raise NotImplementedError("Data augmentation is not implemented yet.")

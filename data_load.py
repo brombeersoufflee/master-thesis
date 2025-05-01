@@ -102,7 +102,7 @@ class DataLoader:
         print(pathology[0])
         lb = LabelBinarizer()
         labels_data = lb.fit_transform(pathology).reshape(-1).astype(int)
-        print(labels_data[0], type(labels_data[0]))
+        # print(labels_data[0], type(labels_data[0]))
         if labels_data[0]!=0:
             print("Warning - labels_data[0] is not 0 -- inverted labels where POAG is 0!!!")
 
