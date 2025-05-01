@@ -6,14 +6,16 @@ import data_augmentation as aug
 
 data_loader = data_load.DataLoader()
 # image_data, np_array_data, labels_data = data_loader.retina()
-np_arrays, pathology, patient_id, eye_side = data_loader.retina_npy()
+np_array_data, labels_data, patient_id, eye_side = data_loader.retina_npy()
 
 print("poaGlaucoma: ", sum(labels_data), "  Healthy:", len(labels_data)-sum(labels_data))
 print("\n")
 
-X_train, X_test, X_val, y_train, y_test, y_val = data_loader.retina_split(np_array_data,labels_data)
-print("Train, Test, Validation size", len(X_train),len(X_test),len(X_val))
-print("\n")
+
+
+# X_train, X_test, X_val, y_train, y_test, y_val = data_loader.retina_split(np_array_data,labels_data)
+# print("Train, Test, Validation size", len(X_train),len(X_test),len(X_val))
+# print("\n")
 
 train_positive_pecentage = sum(y_train)/len(y_train)
 test_positive_pecentage = sum(y_test)/len(y_test)

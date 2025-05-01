@@ -33,7 +33,7 @@ class AugmentData:
             #find all non-glaucomatous instances
             negative_indices = np.where(self.y_train == 0)[0]
             random_index = np.random.choice(negative_indices)
-            for i in range(num_new_volumes):
+            for i in range(0,num_new_volumes):
                 # select a random non-glaucomatous volume and label from the training set
                 random_volume = self.X_train[random_index]
                 random_label = self.y_train[random_index]
@@ -146,6 +146,7 @@ class AugmentData:
     # https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
     @staticmethod
     def gamma_correction(volume):
+        volume = volume.astype(np.uint8)
         gamma = random.uniform(0.75, 1.5)
         # utilize the LUT to speed up the gamma correction calculation (calculte the lookup table once (256 claculations, O(1) after) and use it for all pixels (524.288 pixels per volume))
         lookUpTable = np.empty((1,256))

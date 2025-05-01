@@ -4,7 +4,7 @@ import json
 from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.preprocessing import LabelBinarizer
-from sklearn.model_selection import GroupKFold
+# from sklearn.model_selection import GroupKFold
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
@@ -55,7 +55,8 @@ class DataLoader:
             else:
                 print("Eithter non-mha object found:",filename, 
                       "OR indeces don't match ( current_label_image_name,current_file_name), idx",current_label_image_name,current_file_name,idx)
-        
+        np_arrays = np.array(np_arrays, dtype=np.uint8)
+        labels = np.array(labels).reshape(-1).astype(int)
         return images, np_arrays, labels
     
     def retina_npy(self):
@@ -97,9 +98,11 @@ class DataLoader:
                 eye_side.append(parts[-1])       # OD or OS (last part)
         
         # Convert arrays to numpy array of objects
-        np_arrays = np.array(arrays, dtype=int)
+        np_arrays = np.array(arrays, dtype=np.uint8)
+        print(pathology[0])
         lb = LabelBinarizer()
-        labels_data = lb.fit_transform(pathology)
+        labels_data = lb.fit_transform(pathology).reshape(-1).astype(int)
+        print(labels_data[0], type(labels_data[0]))
         if labels_data[0]!=0:
             print("Warning - labels_data[0] is not 0 -- inverted labels where POAG is 0!!!")
 
@@ -139,28 +142,44 @@ class DataLoader:
     #         json.dump(val_json, f, indent=4)
     
     @staticmethod
-    def retina_npy_split(X, y, groups, n_splits=10, shuffle=True, random_state=None):
-        """splits the (retina_npy loaded) dataset into parts for training and testing
-        X: np.ndarray
-            The input data to be split.
-        y: np.ndarray
-            The target labels for the input data.
-        groups: np.ndarray
-            The group labels for the input data.
-        n_splits: int, default=10
-            The number of splits for cross-validation.
-        shuffle: bool, default=True
-            Whether to shuffle the data before splitting.
-        random_state: int, default=None
-            Random seed for reproducibility.
+    def retina_npy_split(np_array_data, labels_data, patient_id, eye_side, test_proportion=0.2, val_proportion=0.15):
+        """splits the dataset into parts for training, testing and validation
+
         Returns
         -------
-        cv_split: generator
-            A generator that yields train-test splits for cross-validation.
+        X_train, X_test, X_val
+            a list of 3D OCT numpy arrays
+        y_train, y_test, y_val
+            a list of labels corresponding via index to the numpy arrays
         """
-        sgkf = GroupKFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
-        cv_split = sgkf.split(X=X, y=y, groups = groups)
-        return cv_split
+
+        X_train, X_test, y_train, y_test = train_test_split(np_array_data, labels_data, test_size=test_proportion, shuffle=True)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=val_proportion, shuffle=True)
+        return X_train, X_test, X_val, y_train, y_test, y_val
+
+    # @staticmethod
+    # def retina_npy_KFold(X, y, groups, n_splits=10, shuffle=True, random_state=None):
+    #     """splits the (retina_npy loaded) dataset into parts for training and testing
+    #     X: np.ndarray
+    #         The input data to be split.
+    #     y: np.ndarray
+    #         The target labels for the input data.
+    #     groups: np.ndarray
+    #         The group labels for the input data.
+    #     n_splits: int, default=10
+    #         The number of splits for cross-validation.
+    #     shuffle: bool, default=True
+    #         Whether to shuffle the data before splitting.
+    #     random_state: int, default=None
+    #         Random seed for reproducibility.
+    #     Returns
+    #     -------
+    #     cv_split: generator
+    #         A generator that yields train-test splits for cross-validation.
+    #     """
+    #     gkf = GroupKFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+    #     cv_split = gkf.split(X=X, y=y, groups = groups)
+    #     return cv_split
     
     @staticmethod
     #https://www.geeksforgeeks.org/cross-validation-using-k-fold-with-scikit-learn/#logistic-regression-model-kfold-cross-validating
