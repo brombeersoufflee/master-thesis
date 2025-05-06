@@ -106,22 +106,32 @@ class DataLoader:
         if labels_data[0]!=0:
             print("Warning - labels_data[0] is not 0 -- inverted labels where POAG is 0!!!")
 
-        return np_arrays, labels_data, patient_id, eye_side
+        return np_arrays, labels_data, np.array(patient_id), np.array(eye_side)
 
-
-    def retina_split(self, np_array_data, labels_data, test_proportion=0.2, val_proportion=0.15):
-        """splits the dataset into parts for training, testing and validation
+    @staticmethod
+    def retina_npy_split(np_array_data, labels_data, patient_id, eye_side):
+        """splits the dataset into parts for training and testing (training and validation is done via KFold)
 
         Returns
         -------
-        X_train, X_test, X_val
-            a list of 3D OCT numpy arrays
-        y_train, y_test, y_val
-            a list of labels corresponding via index to the numpy arrays
+        train_oct, train_labels, train_patient_id, train_eye_side
+            train data consisting of 3D numpy arrays, labels, patient ids and eye sides
+        test_oct, test_labels, test_patient_id, test_eye_side
+            test data consisting of 3D numpy arrays, labels, patient ids and eye sides
         """
-        X_train, X_test, y_train, y_test = train_test_split(np_array_data, labels_data, test_size=test_proportion, shuffle=True)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=val_proportion, shuffle=True)
-        return X_train, X_test, X_val, y_train, y_test, y_val
+        print("Loading train and test indeces...")
+        train_indeces = np.loadtxt("./data/train_data_indeces.npy").astype(np.int64)
+        test_indeces = np.loadtxt("./data/test_data_indeces.npy").astype(np.int64)
+        print("Splitting train and test data ...")
+        train_oct = np.array(np_array_data[train_indeces])
+        test_oct = np.array(np_array_data[test_indeces])
+        train_labels = np.array(labels_data[train_indeces])
+        test_labels = np.array(labels_data[test_indeces])
+        train_patient_id = np.array(patient_id[train_indeces])
+        test_patient_id = np.array(patient_id[test_indeces])
+        train_eye_side = np.array(eye_side[train_indeces])
+        test_eye_side = np.array(eye_side[test_indeces])
+        return train_oct, test_oct, train_labels, test_labels, train_patient_id, test_patient_id, train_eye_side, test_eye_side
     
     # subspended idea to save the data in json format
     # there might be different ways to do this, but I'm not sure it's necessary
@@ -142,7 +152,7 @@ class DataLoader:
     #         json.dump(val_json, f, indent=4)
     
     @staticmethod
-    def retina_npy_split(np_array_data, labels_data, patient_id, eye_side, test_proportion=0.2, val_proportion=0.15):
+    def retina_split(np_array_data, labels_data, patient_id, eye_side, test_proportion=0.2, val_proportion=0.15):
         """splits the dataset into parts for training, testing and validation
 
         Returns

@@ -5,6 +5,7 @@
 # The test size is set to 20% of the data, and the random state is set for reproducibility
 # The data is split based on the patient_id to ensure that all OCT scans from a single patient are in either the train or test set, not both
 # This is important for avoiding data leakage in medical imaging tasks
+# inspired by https://stackoverflow.com/questions/54797508/how-to-generate-a-train-test-split-based-on-a-group-id
 
 #import
 from sklearn.model_selection import GroupShuffleSplit 
@@ -42,7 +43,7 @@ if (sum(labels_data[train_inds])/len(train_inds) - sum(labels_data[test_inds])/l
         print("\n", file=f)
         print("train positives:", sum(labels_data[train_inds])/len(train_inds), "  ---  test positives:", sum(labels_data[test_inds])/len(test_inds), file=f)
 
-    np.savetxt("data/train_data_indeces.npy", train_inds)
+    np.savetxt("data/train_data_indeces.npy", train_inds, )
     np.savetxt("data/test_data_indeces.npy", test_inds)
 else:
     print("The split is not balanced")
