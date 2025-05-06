@@ -88,7 +88,7 @@ class Model_Implementation:
                 # TODO : check callback parameters
                 callbacks = [
                     EarlyStopping(monitor='val_auc', mode='max', patience=10, restore_best_weights=True),
-                    ModelCheckpoint('best_model.h5', monitor='val_auc', mode='max', save_best_only=True)
+                    ModelCheckpoint('best_model.keras', monitor='val_auc', mode='max', save_best_only=True)
                 ]
 
                 print(f"Fold {i+1}/{self.kfolds}")
@@ -119,7 +119,9 @@ class Model_Implementation:
                 auc_test = roc_auc_score(y_vals, y_pred)
                 print(f"Test AUC: {auc_test:.4f}")
                 # Save the model
-                model.save(f"model_fold_{i+1}.h5")
+                #  WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. 
+                # We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+                model.save(f"model_fold_{i+1}.keras")
                 historys.append(history)
                 tf.keras.backend.clear_session()
             return historys
