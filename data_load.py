@@ -99,10 +99,11 @@ class DataLoader:
         
         # Convert arrays to numpy array of objects
         np_arrays = np.array(arrays, dtype=np.uint8)
-        print(pathology[0])
+        # print(pathology[0])
         lb = LabelBinarizer()
         labels_data = lb.fit_transform(pathology).reshape(-1).astype(int)
         # print(labels_data[0], type(labels_data[0]))
+
         if labels_data[0]!=0:
             print("Warning - labels_data[0] is not 0 -- inverted labels where POAG is 0!!!")
 

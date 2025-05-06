@@ -2,5 +2,4 @@
 import model_implementation as model_impl
 
 model_imp = model_impl.Model_Implementation(model_name="CNN", kfolds=10, augmentation=False)
-model = model_imp.build_model()
 history = model_imp.train_model()
