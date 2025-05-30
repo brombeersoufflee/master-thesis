@@ -4,13 +4,15 @@ import cv2 as cv
 from scipy.ndimage import gaussian_filter, map_coordinates
 
 class AugmentData:
-    def __init__(self, X_train, y_train):
+    def __init__(self, X_train: np.array, y_train: np.array, patient_id: np.array):
         self.X_train = np.array(X_train)
         self.y_train = np.array(y_train)
+        self.patient_id = patient_id
         self.X_train_augmented = []
         self.y_train_augmented = []
+        self.patient_id_augmented = []
     
-    def augment_data(self, num_new_volumes, return_values= "complete"):
+    def augment_data(self, num_new_volumes: int, return_values= "complete"):
         if num_new_volumes < 0:
             raise ValueError("num_new_volumes must be non-negative")
         if return_values not in ["complete", "augmented"]:
@@ -18,7 +20,7 @@ class AugmentData:
         
         if num_new_volumes == 0:
             print("No new volumes to generate.")
-            return self.X_train, self.y_train
+            return self.X_train, self.y_train, self.patient_id
         if num_new_volumes > 0:
              #init indeces
             brightness_index = 0
@@ -31,12 +33,13 @@ class AugmentData:
             scaling_index = 0
             deformation_index = 0
             #find all non-glaucomatous instances
-            negative_indices = np.where(self.y_train == 0)[0]
+            negative_indices = np.where(self.y_train[:, 1] == 0)[0]
             random_index = np.random.choice(negative_indices)
             for i in range(0,num_new_volumes):
                 # select a random non-glaucomatous volume and label from the training set
                 random_volume = self.X_train[random_index]
                 random_label = self.y_train[random_index]
+                random_patient_id = self.patient_id[random_index]
                 
                 # random number for augmentation type and method
                 random_method_num = random.random() 
@@ -85,27 +88,30 @@ class AugmentData:
                 # append the augmented volume to the augmented training set
                 self.X_train_augmented.append(augmented_volume)
                 self.y_train_augmented.append(random_label)
+                self.patient_id_augmented.append(random_patient_id)
 
         print("Augmented data with the following methods:")
-        print(f"Brightness changes: {brightness_index}, {brightness_index/num_new_volumes*100}%")
-        print(f"Contrast changes: {contrast_index}, {contrast_index/num_new_volumes*100}%")
-        print(f"Gamma changes: {gamma_index}, {gamma_index/num_new_volumes*100}%")
-        print(f"Gaussian noise: {gauss_index}, {gauss_index/num_new_volumes*100}%")
-        print(f"Blurring: {blurring_index}, {blurring_index/num_new_volumes*100}%")
-        print(f"Blurring then sharpening: {blurring_sharpening_index}, {blurring_sharpening_index/num_new_volumes*100}%")
-        print(f"Small translation: {translation_index}, {translation_index/num_new_volumes*100}%")
-        print(f"Mild scaling: {scaling_index}, {scaling_index/num_new_volumes*100}%")
-        print(f"Elastic deformation: {deformation_index}, {deformation_index/num_new_volumes*100}%")
-
+        print(f"Brightness changes: {brightness_index}; {np.round(brightness_index/num_new_volumes*100,2)}%")
+        print(f"Contrast changes: {contrast_index}; {np.round(contrast_index/num_new_volumes*100,2)}%")
+        print(f"Gamma changes: {gamma_index}; {np.round(gamma_index/num_new_volumes*100,2)}%")
+        print(f"Gaussian noise: {gauss_index}; {np.round(gauss_index/num_new_volumes*100,2)}%")
+        print(f"Blurring: {blurring_index}; {np.round(blurring_index/num_new_volumes*100,2)}%")
+        print(f"Blurring then sharpening: {blurring_sharpening_index}; {np.round(blurring_sharpening_index/num_new_volumes*100,2)}%")
+        print(f"Small translation: {translation_index}; {np.round(translation_index/num_new_volumes*100,2)}%")
+        print(f"Mild scaling: {scaling_index}; {np.round(scaling_index/num_new_volumes*100,2)}%")
+        print(f"Elastic deformation: {deformation_index}; {np.round(deformation_index/num_new_volumes*100,2)}%")
+# 
         if return_values == "complete":
             print("Returning both original and augmented data in one.")
             X_train_complete = np.concatenate((self.X_train, self.X_train_augmented), axis=0)
             y_train_complete = np.concatenate((self.y_train, self.y_train_augmented), axis=0)
-            return X_train_complete, y_train_complete
+            patient_id_complete = np.concatenate((self.patient_id, self.patient_id_augmented), axis=0)
+            return X_train_complete, y_train_complete, patient_id_complete
         if return_values == "augmented":
             print("Returning only augmented data.")
-            return self.X_train_augmented, self.y_train_augmented
-        
+            return self.X_train_augmented, self.y_train_augmented, self.patient_id_augmented
+    
+    "-------------------------------------------------------------------------------------------------"    
     """The methods below seem reasonable
     - Intensity based augmentations
         - Brightness adjustment

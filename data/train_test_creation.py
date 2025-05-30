@@ -43,7 +43,7 @@ if (sum(labels_data[train_inds])/len(train_inds) - sum(labels_data[test_inds])/l
         print("\n", file=f)
         print("train positives:", sum(labels_data[train_inds])/len(train_inds), "  ---  test positives:", sum(labels_data[test_inds])/len(test_inds), file=f)
 
-    np.savetxt("data/train_data_indeces.npy", train_inds, )
+    np.savetxt("data/train_data_indeces.npy", train_inds)
     np.savetxt("data/test_data_indeces.npy", test_inds)
 else:
     print("The split is not balanced")
