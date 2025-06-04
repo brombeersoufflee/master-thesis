@@ -34,8 +34,8 @@ class AugmentData:
             deformation_index = 0
             #find all non-glaucomatous instances
             negative_indices = np.where(self.y_train[:, 1] == 0)[0]
-            random_index = np.random.choice(negative_indices)
-            for i in range(0,num_new_volumes):
+            for i in range(0, num_new_volumes):
+                random_index = np.random.choice(negative_indices)
                 # select a random non-glaucomatous volume and label from the training set
                 random_volume = self.X_train[random_index]
                 random_label = self.y_train[random_index]
@@ -106,6 +106,9 @@ class AugmentData:
             X_train_complete = np.concatenate((self.X_train, self.X_train_augmented), axis=0)
             y_train_complete = np.concatenate((self.y_train, self.y_train_augmented), axis=0)
             patient_id_complete = np.concatenate((self.patient_id, self.patient_id_augmented), axis=0)
+            # self.X_train_augmented = None  # Google colab RAM
+            # self.y_train_augmented = None # Google colab RAM
+            # self.patient_id_augmented = None # Google colab RAM
             return X_train_complete, y_train_complete, patient_id_complete
         if return_values == "augmented":
             print("Returning only augmented data.")

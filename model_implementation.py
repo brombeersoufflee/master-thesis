@@ -32,6 +32,9 @@ class Model_Implementation:
         self.num_glaucoma = sum(self.train_labels)
         self.num_healthy = len(self.train_labels) - self.num_glaucoma
 
+
+        print(self.train_volumes.nbytes)
+
         gkf = StratifiedGroupKFold(n_splits=self.kfolds, shuffle= True, random_state=53)
         self.cv_split = gkf.split(X=self.train_volumes, y=self.train_labels, groups=self.train_patient_id)
         print(f"{kfolds}-Fold split created")
@@ -120,7 +123,7 @@ class Model_Implementation:
             train_patient_id = self.train_patient_id[train_idx]
             val_patient_id = self.train_patient_id[val_idx]
 
-
+            print("xtrain b4 5d shape", X_trains.nbytes)
             # Data augmentation
             if self.augmentation:
                 print("Data augmentation is enabled.")
@@ -135,6 +138,8 @@ class Model_Implementation:
                 print(f"X train data shape: {X_trains.shape}, y train data shape: {y_trains.shape}")
             print(f"X validation shape: {X_vals.shape}, y validation shape: {y_vals.shape}")
             
+            # train_patient_id = None # Google colab RAM
+
             print(f"Train data labels positive:{np.where(y_trains[:, 1] == False)[0].shape[0]} / {y_trains.shape[0]}")
 
             # making input data 5d
@@ -142,6 +147,15 @@ class Model_Implementation:
             print("Xtrains shape", X_trains.shape)
             X_vals = np.array([np.expand_dims(volume, axis=-1) for volume in X_vals])
             print("Xvals shape", X_vals.shape)  
+
+            for i, volume in enumerate(X_trains):
+                X_trains[i] = np.expand_dims(volume, axis=-1)
+            print("Xtrains shape", X_trains.shape)
+            for i, volume in enumerate(X_vals):
+                X_vals[i] = np.expand_dims(volume, axis=-1)
+            print("Xvals shape", X_vals.shape)  
+
+
 
             # Train the model
             history = model.fit(x = X_trains,
