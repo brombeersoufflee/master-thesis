@@ -8,11 +8,11 @@ from keras import Model
 from keras.utils import plot_model
 from keras.layers import Input
 from keras.models import Sequential
-from keras.layers import Conv3D, BatchNormalization, GlobalAveragePooling3D, Dense, Activation, MaxPool3D, Dropout
+from keras.layers import Conv3D, BatchNormalization, GlobalAveragePooling3D, Dense, Activation, MaxPool3D, Dropout, Rescaling
 from keras.optimizers import Nadam
 from keras.metrics import AUC
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-import numpy as np
+import numpy as np  
 from sklearn.metrics import roc_auc_score
 
 class Model_Implementation:
@@ -108,7 +108,7 @@ class Model_Implementation:
 
             print(model.summary())
             plot_model(model, show_shapes=True)
-            model.compile(optimizer=Nadam(learning_rate=1e-4),  loss='categorical_crossentropy', metrics=[AUC(name='auc'),'accuracy'])
+            model.compile(optimizer=Nadam(learning_rate=1e-4),  loss='categorical_crossentropy', metrics=[AUC(name='auc'),'f1_score', 'accuracy'])
             # Add your training code here
             # model.fit(...)
             # TODO : check callback parameters
