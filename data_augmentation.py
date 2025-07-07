@@ -161,7 +161,8 @@ class AugmentData:
         lookUpTable = np.empty((1,256))
         for i in range(256):
             lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255).astype(np.uint8)
-        return cv.LUT(volume, lookUpTable)
+        volume = cv.LUT(volume, lookUpTable)
+        return volume.astype(np.uint8)
     
     # This probably should not be applied!!!
     # https://docs.opencv.org/3.4/d4/d1b/tutorial_histogram_equalization.html
@@ -196,7 +197,7 @@ class AugmentData:
         ty = random.randint(-5, 5)
         M = np.float32([[1, 0, tx], [0, 1, ty]])
         array = np.array([cv.warpAffine(slice, M, (slice.shape[1], slice.shape[0])).astype(np.uint8) for slice in volume ])
-        return array
+        return array.astype(np.uint8)
     
     #correct and scaling values are reasonable
     @staticmethod

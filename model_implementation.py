@@ -43,28 +43,31 @@ class Model_Implementation:
         df = pd.get_dummies(self.train_labels)
         self.train_labels = df.values
 
-    def build_model(self):
+    def build_model(self, lr = 1e-4,filters_1 = 64,filters_2 = 32, kernel_size1=7, kernel_size2 = 5):
         if self.model_name == "CNN":
             inputs = Input(shape=(64, 128, 64, 1))
-            x = Conv3D(64, kernel_size=7, strides=2, padding='same')(inputs)
+            x = Conv3D(filters_1, kernel_size=kernel_size1, strides=2, padding='same')(inputs)
             x = BatchNormalization()(x)
             x = Activation("relu")(x)
-            x = Conv3D(32, kernel_size=5, strides=1, padding='same')(x)
+            x = Conv3D(filters_2, kernel_size=kernel_size2, strides=1, padding='same')(x)
             x = BatchNormalization()(x)
             x = Activation("relu")(x)
-            x = Conv3D(32, kernel_size=3, strides=1, padding='same')(x)
-            x = BatchNormalization()(x)
-            x = Activation("relu")(x)
-            x = Conv3D(32, kernel_size=3, strides=1, padding='same')(x)
-            x = BatchNormalization()(x)
-            x = Activation("relu")(x)
-            x = Conv3D(32, kernel_size=3, strides=1, padding='same')(x)
-            x = BatchNormalization()(x)
-            x = Activation("relu")(x)
+
+            for _ in range(3):
+                x = Conv3D(filters_2, kernel_size=3, strides=1, padding='same')(x)
+                x = BatchNormalization()(x)
+                x = Activation("relu")(x)
+
             x = GlobalAveragePooling3D()(x)
             outputs = Dense(2, activation='softmax')(x)
             
-            return Model(inputs, outputs)
+            model = Model(inputs, outputs)
+            
+            print(model.summary())
+            plot_model(model, show_shapes=True)
+            model.compile(optimizer=Nadam(learning_rate=lr),  loss='categorical_crossentropy', metrics=[AUC(name='auc'),'f1_score', 'accuracy'])
+            
+            return model
         
         elif self.model_name == "CNNAlex":
             inputs = Input(shape=(64, 128, 64, 1))
@@ -91,7 +94,14 @@ class Model_Implementation:
             x = Dense(units=128, activation="relu")(x) 
             x = Dropout(0.3)(x)
             outputs = Dense(2, activation='softmax')(x)
-            return Model(inputs, outputs)
+
+            model = Model(inputs, outputs)
+            
+            print(model.summary())
+            plot_model(model, show_shapes=True)
+            model.compile(optimizer=Nadam(learning_rate=1e-4),  loss='categorical_crossentropy', metrics=[AUC(name='auc'),'f1_score', 'accuracy'])
+            
+            return model
         else:
             raise NotImplementedError(f"Model {self.model_name} is not implemented yet.")
         
@@ -106,14 +116,11 @@ class Model_Implementation:
             
             model = self.build_model()
 
-            print(model.summary())
-            plot_model(model, show_shapes=True)
-            model.compile(optimizer=Nadam(learning_rate=1e-4),  loss='categorical_crossentropy', metrics=[AUC(name='auc'),'f1_score', 'accuracy'])
             # Add your training code here
             # model.fit(...)
             # TODO : check callback parameters
             callbacks = [
-                EarlyStopping(monitor='val_loss', mode='min', patience=7, restore_best_weights=True),
+                EarlyStopping(monitor='val_loss', mode='min', patience=20, restore_best_weights=True),
                 ModelCheckpoint('best_model.keras', monitor='val_loss', mode='min', save_best_only=True)
             ]
 
@@ -148,12 +155,12 @@ class Model_Implementation:
             X_vals = np.array([np.expand_dims(volume, axis=-1) for volume in X_vals])
             print("Xvals shape", X_vals.shape)  
 
-            for i, volume in enumerate(X_trains):
-                X_trains[i] = np.expand_dims(volume, axis=-1)
-            print("Xtrains shape", X_trains.shape)
-            for i, volume in enumerate(X_vals):
-                X_vals[i] = np.expand_dims(volume, axis=-1)
-            print("Xvals shape", X_vals.shape)  
+            # for i, volume in enumerate(X_trains):
+            #     X_trains[i] = np.expand_dims(volume, axis=-1)
+            # print("Xtrains shape", X_trains.shape)
+            # for i, volume in enumerate(X_vals):
+            #     X_vals[i] = np.expand_dims(volume, axis=-1)
+            # print("Xvals shape", X_vals.shape)  
 
 
 
@@ -161,7 +168,7 @@ class Model_Implementation:
             history = model.fit(x = X_trains,
                 y = y_trains,
                 validation_data=(X_vals, y_vals),
-                epochs=100,
+                epochs=150,
                 callbacks=callbacks,
                 verbose=1
                 )
