@@ -14,7 +14,7 @@ from keras.metrics import AUC
  # Data loading and preprocessing
 data_loader = data_load.DataLoader()
 print("Loading data...")
-volumes, labels, patient_id, eye_side = data_loader.retina_npy(path ="datas/datas/")
+volumes, labels, patient_id, eye_side = data_loader.retina_npy()
 print("Splitting data...")
 train_volumes, test_volumes, train_labels, test_labels, train_patient_id, test_patient_id, train_eye_side, test_eye_side = data_loader.retina_npy_split(volumes, labels, patient_id, eye_side)
 print(f"Train data shape: {train_volumes.shape}, Train labels shape: {train_labels.shape}")
@@ -71,7 +71,7 @@ tuner = RandomSearch(
 )
 
 callbacks = [
-    EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True),
+    EarlyStopping(monitor='val_loss', patience=12, restore_best_weights=True),
     ModelCheckpoint("best_model.keras", save_best_only=True, monitor="val_loss", mode="min")
 ]
 
@@ -79,6 +79,7 @@ tuner.search(
     X_trains, y_trains,
     validation_data=(X_vals,y_vals),
     epochs=150,
+    batch_size=16,
     callbacks=callbacks
 )
 

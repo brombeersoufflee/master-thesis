@@ -1,0 +1,1 @@
+Due to the highest final validation AUC and the consistently higher validation f1 scores I choose model 4.

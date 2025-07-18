@@ -59,7 +59,7 @@ class DataLoader:
         labels = np.array(labels).reshape(-1).astype(int)
         return images, np_arrays, labels
     
-    def retina_npy(self, path = None):
+    def retina_npy(self):
         """loads the data in folder glaucoma_oct_data/retina-oct-glaucoma-NPY/retina-oct-glaucoma-NPY
         see data documentation on OneDrive for "Retina OCT Glaucoma dataset"
 
@@ -75,7 +75,7 @@ class DataLoader:
             a list of eye sides (OD or OS) corresponding via index to np_arrays
         """
 
-        # path = os.path.join(self.path,"retina-oct-glaucoma-NPY/retina-oct-glaucoma-NPY")
+        path = os.path.join(self.path,"retina-oct-glaucoma-NPY/retina-oct-glaucoma-NPY")
         
         arrays = []
         pathology = []
